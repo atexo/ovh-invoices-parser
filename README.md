@@ -1,2 +1,18 @@
 # ovh-invoices-parser
-Transform OVH PDF invoices to convenient CSV files.
+
+Transform OVH PDF invoices to proper CSV files.
+
+## dependencies
+
+```bash
+python3 -m venv .venv
+```
+
+## usage
+
+1. Copy the PDF invoices in the input directory
+2. Run the script. The processed data will be available in the output folder. A global report will be written in the `output/report.csv` file.
+
+```
+./ovh-invoices-parser.py
+```
