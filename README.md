@@ -4,7 +4,7 @@ Transform OVH PDF invoices to proper CSV files.
 
 ![image](demo.png)
 
-## dependencies
+## install dependencies
 
 ```bash
 python3 -m venv .venv

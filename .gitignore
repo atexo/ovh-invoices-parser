@@ -1,4 +1,4 @@
 .venv
-input/*
-output/*
+input/*.pdf
+output/*.csv
 .DS_Store
