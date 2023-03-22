@@ -2,6 +2,8 @@
 
 Transform OVH PDF invoices to proper CSV files.
 
+![image](demo.png)
+
 ## dependencies
 
 ```bash
