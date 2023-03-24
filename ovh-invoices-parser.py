@@ -192,7 +192,6 @@ def extractItems(sanitized_data):
 
     for line in sanitized_data:
         
-        print(line)
         # Rubrique start pattern
         if line.startswith("Rubrique"):
             rubrique = line.replace("Rubrique ", "")
