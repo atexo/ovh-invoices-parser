@@ -187,15 +187,22 @@ def extractItems(sanitized_data):
         if line.startswith("Rubrique"):
             rubrique = line.replace("Rubrique ", "")
 
-        re_item_line = re.compile(r"(.*)\s([^ ]*)\s(\d)\s(\d.*,\d.*)\s€\s(\d.*,\d.*)\s€")
+
+        # Handle spaces in reference
+        line = re.sub(r'(\S-)\s', r'\g<1>', line)
+
+        # Handle thousand separator
+        prices = re.findall(r"\s\d*\s([\-]?(?:\d+|\d{1,3}(?:\s\d{3})*)(?:\,\d*)?\s€)\s([\-]?(?:\d+|\d{1,3}(?:\s\d{3})*)(?:\,\d*)?\s€)", line)
+        for price in prices:
+            for data in price:
+                line = line.replace(data, data.replace(" ", ""), 1)
+  
+        re_item_line = re.compile(r"(.*)\s([^ ]*)\s(\d*)\s([\-]?\d*,\d*)€\s([\-]?\d*,\d*)€")
         
         if re_item_line.search(line):
 
-            # Handle spaces in reference
-            line = re.sub(r'(\S-)\s', r'\g<1>', line)
-
             # Execute regex on processed line
-            re_groups = re.search(r"(.*)\s([^ ]*)\s(\d)\s(\d.*,\d.*)\s€\s(\d.*,\d.*)\s€", line).groups()
+            re_groups = re.search(r"(.*)\s([^ ]*)\s(\d*)\s([\-]?\d*,\d*)€\s([\-]?\d*,\d*)€", line).groups()
             
             # Create item object
             if len(re_groups) == 5:
@@ -216,7 +223,6 @@ def extractItems(sanitized_data):
                     )
                 
                 items.append(item)
-
     return items
 
 def writeToCsv(data, output):
