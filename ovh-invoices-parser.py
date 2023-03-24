@@ -47,6 +47,7 @@ class OVHInvoiceItem:
     """
     def __init__(
         self,
+        invoice,
         section,
         description,
         reference,
@@ -56,6 +57,7 @@ class OVHInvoiceItem:
         period_start,
         period_end
     ):
+        self._invoice = invoice
         self._section = section
         self._description = description
         self._reference = reference
@@ -66,15 +68,17 @@ class OVHInvoiceItem:
         self._period_end = period_end
 
     def __repr__(self):
-        return f"OVHInvoiceItem({self._section!r}, {self._description!r}, {self._reference!r}, {self._unit_count!r}, {self._unit_price!r}, {self._price!r}, {self._period_start!r}, {self._period_end!r})"
+        return f"OVHInvoiceItem({self._invoice!r}, {self._section!r}, {self._description!r}, {self._reference!r}, {self._unit_count!r}, {self._unit_price!r}, {self._price!r}, {self._period_start!r}, {self._period_end!r})"
 
     def __iter__(self):
-        return iter([self._section, self._description, self._reference, self._unit_count, self._unit_price, self._price, self._period_start, self._period_end])
+        return iter([self._invoice, self._section, self._description, self._reference, self._unit_count, self._unit_price, self._price, self._period_start, self._period_end])
 
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
             sort_keys=True, indent=4,  ensure_ascii=False)
 
+    def get_invoice(self):
+        return self._invoice
     def get_section(self):
         return self._section
     def get_description(self):
@@ -135,6 +139,10 @@ def sanitizePDFExtraction(data):
     for line in data:
         line = line.strip()
         if len(line):
+            # Référence de la facture start pattern
+            if line.startswith("Référence de la facture"):
+                sanitized_data.append(line)
+                
             # Rubrique start pattern
             if line.startswith("Rubrique"):
                 sanitized_data.append(line)
@@ -179,14 +187,18 @@ def extractItems(sanitized_data):
     """
 
     items = []
+    invoice = ""
     rubrique = ""
 
     for line in sanitized_data:
-
+        
+        print(line)
         # Rubrique start pattern
         if line.startswith("Rubrique"):
             rubrique = line.replace("Rubrique ", "")
 
+        if line.startswith("Référence de la facture"):
+            invoice = line.replace("Référence de la facture : ", "")
 
         # Handle spaces in reference
         line = re.sub(r'(\S-)\s', r'\g<1>', line)
@@ -212,6 +224,7 @@ def extractItems(sanitized_data):
                     re_date_groups = ["", ""]
 
                 item = OVHInvoiceItem(
+                    invoice,
                     rubrique,
                     re_groups[0],
                     re_groups[1],
@@ -229,7 +242,7 @@ def writeToCsv(data, output):
 
     with open(output, "w") as stream:
         writer = csv.writer(stream, delimiter=';')
-        writer.writerow(["section", "description", "reference", "unit_count", "unit_price", "price", "period_start", "period_end"])
+        writer.writerow(["invoice", "section", "description", "reference", "unit_count", "unit_price", "price", "period_start", "period_end"])
         writer.writerows(data)
   
 if __name__ == "__main__":
