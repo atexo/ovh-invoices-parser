@@ -188,7 +188,8 @@ def sanitizePDFExtraction(data):
 def handleDate(date_as_string):
     try:
         date_time = datetime.strptime(date_as_string, '%d/%m/%Y').date()
-        return time.mktime(date_time.timetuple())
+        return date_time.strftime("%Y-%m-%d")
+        #return time.mktime(date_time.timetuple())
     except:
         return ""
 
