@@ -8,6 +8,7 @@ import re
 import sys
 
 from tika import parser 
+from unidecode import unidecode
 
 INPUT_FOLDER = "./input"
 OUTPUT_FOLDER = "./output"
@@ -57,10 +58,10 @@ class OVHInvoiceItem:
         period_start,
         period_end
     ):
-        self._invoice = invoice
-        self._section = section
-        self._description = description
-        self._reference = reference
+        self._invoice = unidecode(invoice)
+        self._section = unidecode(section)
+        self._description = unidecode(description)
+        self._reference = unidecode(reference)
         self._unit_count = unit_count
         self._unit_price = unit_price
         self._price = price
