@@ -6,7 +6,9 @@ import json
 import os
 import re
 import sys
+import time
 
+from datetime import datetime
 from tika import parser 
 from unidecode import unidecode
 
@@ -65,8 +67,8 @@ class OVHInvoiceItem:
         self._unit_count = unit_count
         self._unit_price = unit_price
         self._price = price
-        self._period_start = period_start
-        self._period_end = period_end
+        self._period_start = handleDate(period_start)
+        self._period_end = handleDate(period_end)
 
     def __repr__(self):
         return f"OVHInvoiceItem({self._invoice!r}, {self._section!r}, {self._description!r}, {self._reference!r}, {self._unit_count!r}, {self._unit_price!r}, {self._price!r}, {self._period_start!r}, {self._period_end!r})"
@@ -97,6 +99,8 @@ class OVHInvoiceItem:
     def get_period_end(self):
         return self._period_end
 
+
+        
 class OVHInvoice:
     """
     Describe a OVH invoice.
@@ -180,6 +184,13 @@ def sanitizePDFExtraction(data):
                     continue
                 
     return sanitized_data
+
+def handleDate(date_as_string):
+    try:
+        date_time = datetime.strptime(date_as_string, '%d/%m/%Y').date()
+        return time.mktime(date_time.timetuple())
+    except:
+        return ""
 
 def extractItems(sanitized_data):
     """
