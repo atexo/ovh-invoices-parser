@@ -64,9 +64,9 @@ class OVHInvoiceItem:
         self._section = unidecode(section)
         self._description = unidecode(description)
         self._reference = unidecode(reference)
-        self._unit_count = unit_count
-        self._unit_price = unit_price
-        self._price = price
+        self._unit_count = float(unit_count.replace(",","."))
+        self._unit_price = float(unit_price.replace(",","."))
+        self._price = float(price.replace(",","."))
         self._period_start = handleDate(period_start)
         self._period_end = handleDate(period_end)
 
