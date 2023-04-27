@@ -243,7 +243,8 @@ def sanitizePDFExtraction(data):
 def handleDate(date_as_string):
     try:
         date_time = datetime.strptime(date_as_string, '%d/%m/%Y').date()
-        return time.mktime(date_time.timetuple())
+        str =  time.mktime(date_time.timetuple())
+        return str
     except:
         return ""
 
@@ -289,6 +290,12 @@ def extractItems(sanitized_data):
                 except:
                     re_date_groups = ["", ""]
 
+                if len(re_date_groups[0])==0:
+                    re_date_groups[0] = invoice_date_start.strftime("%d/%m/%Y")
+
+                if len(re_date_groups[1])==0:
+                    re_date_groups[1] = invoice_date_end.strftime("%d/%m/%Y")
+
                 item = OVHInvoiceItem(
                     invoice,
                     rubrique,
@@ -297,8 +304,8 @@ def extractItems(sanitized_data):
                     re_groups[2],
                     re_groups[3],
                     re_groups[4],
-                    re_date_groups[0] if len(re_date_groups[0])==0 else invoice_date_start.strftime("%m/%d/%Y"),
-                    re_date_groups[1] if len(re_date_groups[1])==0 else invoice_date_end.strftime("%m/%d/%Y"),
+                    re_date_groups[0],
+                    re_date_groups[1],
                     )
 
                 items.append(item)
