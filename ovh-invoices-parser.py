@@ -99,7 +99,24 @@ class OVHInvoiceItem:
     def get_period_end(self):
         return self._period_end
 
-
+    def set_invoice(self, input):
+        self._invoice = input
+    def set_section(self, input):
+        self._section = input
+    def set_description(self, input):
+        self._description = input
+    def set_reference(self, input):
+        self._reference = input
+    def set_unit_count(self, input):
+        self._unit_count = input
+    def set_unit_price(self, input):
+        self._unit_price = input
+    def set_price(self, input):
+        self._price = input
+    def set_period_start(self, input):
+        self._period_start = input
+    def set_period_end(self, input):
+        self._period_end = input
         
 class OVHInvoice:
     """
@@ -246,6 +263,13 @@ def extractItems(sanitized_data):
                     re_date_groups[1],
                     )
                 
+
+                # If no date is set, use previous date
+                if item.get_period_start() == "" and len(items) > 1:
+                    item.set_period_start(items[-1].get_period_start())
+                if item.get_period_end() == "" and len(items) > 1:
+                    item.set_period_end(items[-1].get_period_end())
+
                 items.append(item)
     return items
 
