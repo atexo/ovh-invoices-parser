@@ -1,6 +1,7 @@
 #!.venv/bin/python
 # -*- coding: utf-8 -*-
 
+import calendar
 import csv
 import json
 import os
@@ -9,11 +10,38 @@ import sys
 import time
 
 from datetime import datetime
+from datetime import date
+
 from tika import parser 
 from unidecode import unidecode
 
 INPUT_FOLDER = "./input"
 OUTPUT_FOLDER = "./output"
+
+invoice_date_start = None
+invoice_date_end = None
+
+def add_months(source_date, months):
+    month = source_date.month - 1 + months
+    year = source_date.year + month // 12
+    month = month % 12 + 1
+    day = min(source_date.day, calendar.monthrange(year,month)[1])
+
+    return date(year, month, day)
+
+def set_invoice_date(date_as_string):
+    global invoice_date_start
+    global invoice_date_end
+    
+    invoice_date_start = date_as_string
+    invoice_date_end = add_months(date_as_string,1)
+    
+def reset_invoice_date():
+    global invoice_date_start
+    global invoice_date_end
+
+    invoice_date_start = None
+    invoice_date_end = None
 
 def main(argv=None):
 
@@ -151,6 +179,8 @@ def sanitizePDFExtraction(data):
     Returns an array of sanitized lines.
     """
 
+    invoice_date = None
+
     sanitized_data = []
     
     buffer = []
@@ -161,6 +191,14 @@ def sanitizePDFExtraction(data):
     for line in data:
         line = line.strip()
         if len(line):
+            
+            if line.startswith("Date d'émission :"):
+                # Execute regex on processed line
+                re_groups = re.search(r"(([0-2][0-9]|(3)[0-1])(\/)(((0)[0-9])|((1)[0-2]))(\/)\d{4}$)", line).groups()
+                # Create item object
+                if len(re_groups) > 1:
+                    set_invoice_date(datetime.strptime(re_groups[0], '%d/%m/%Y').date())
+
             # Référence de la facture start pattern
             if line.startswith("Référence de la facture"):
                 sanitized_data.append(line)
@@ -259,16 +297,9 @@ def extractItems(sanitized_data):
                     re_groups[2],
                     re_groups[3],
                     re_groups[4],
-                    re_date_groups[0],
-                    re_date_groups[1],
+                    re_date_groups[0] if len(re_date_groups[0])==0 else invoice_date_start.strftime("%m/%d/%Y"),
+                    re_date_groups[1] if len(re_date_groups[1])==0 else invoice_date_end.strftime("%m/%d/%Y"),
                     )
-                
-
-                # If no date is set, use previous date
-                if item.get_period_start() == "" and len(items) > 1:
-                    item.set_period_start(items[-1].get_period_start())
-                if item.get_period_end() == "" and len(items) > 1:
-                    item.set_period_end(items[-1].get_period_end())
 
                 items.append(item)
     return items
