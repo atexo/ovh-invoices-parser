@@ -18,8 +18,11 @@ from unidecode import unidecode
 INPUT_FOLDER = "./input"
 OUTPUT_FOLDER = "./output"
 
+invoice_reference = None
 invoice_date_start = None
 invoice_date_end = None
+invoice_total_amount = 0
+invoice_parsed_amount = 0
 
 def add_months(source_date, months):
     month = source_date.month - 1 + months
@@ -28,6 +31,14 @@ def add_months(source_date, months):
     day = min(source_date.day, calendar.monthrange(year,month)[1])
 
     return date(year, month, day)
+
+def set_invoice_reference(reference):
+    global invoice_reference
+    invoice_reference = reference
+
+def reset_invoice_reference():
+    global invoice_reference
+    invoice_reference = None
 
 def set_invoice_date(date_as_string):
     global invoice_date_start
@@ -43,14 +54,30 @@ def reset_invoice_date():
     invoice_date_start = None
     invoice_date_end = None
 
+def set_invoice_total_amount(amount):
+    global invoice_total_amount
+    invoice_total_amount = amount
+
+def increase_invoice_parsed_amount(amount):
+    global invoice_parsed_amount
+    invoice_parsed_amount += amount
+
+def reset_invoice_amounts():
+    global invoice_total_amount
+    global invoice_parsed_amount
+    invoice_total_amount = 0
+    invoice_parsed_amount = 0
+
 def main(argv=None):
 
     all_files_data = []
+    processed_invoices = []
 
     files = [f for f in os.listdir(INPUT_FOLDER) if os.path.isfile(f'%s/%s'%(INPUT_FOLDER, f)) and f.endswith('.pdf')]
 
     for file in files:
         print(f'Processing file %s'%(file))
+        reset_invoice_reference()
 
         # Parse data from PDF file using tika
         data = parsePdf(f'%s/%s'%(INPUT_FOLDER, file))
@@ -61,7 +88,14 @@ def main(argv=None):
         # Read items
         items = extractItems(sanitized_data)
         invoice = OVHInvoice(items)
-        all_files_data.extend(invoice.get_items())
+
+        if invoice_reference not in processed_invoices:
+            all_files_data.extend(invoice.get_items())
+            processed_invoices.append(invoice_reference)
+
+        # Check data coherence
+        if (abs(invoice_parsed_amount - invoice_total_amount) > 0.1):
+            print(f'%s - Warning : missing amount : %f'%(file, invoice_total_amount-invoice_parsed_amount))
 
         # Write to CSV
         writeToCsv(invoice.get_items(), f'%s/%s'%(OUTPUT_FOLDER, file.replace(".pdf", ".csv")))
@@ -179,7 +213,8 @@ def sanitizePDFExtraction(data):
     Returns an array of sanitized lines.
     """
 
-    invoice_date = None
+    reset_invoice_date()
+    reset_invoice_amounts()
 
     sanitized_data = []
     
@@ -192,17 +227,28 @@ def sanitizePDFExtraction(data):
         line = line.strip()
         if len(line):
             
+            if line.startswith("Total de la facture HT"):
+                try:
+                    # Execute regex on processed line
+                    re_groups = re.search(r"^Total de la facture HT ([\d|\s]*,?(?:[\d|\s]*)?) €$", line).groups()
+                    # Assign invoice total
+                    if len(re_groups) == 1:      
+                        total_amount = float(''.join(re_groups).replace(",",".").replace(" ",""))                  
+                        set_invoice_total_amount(total_amount)
+                except AttributeError:
+                    print(f'Warning : cannot process amount : %f'%(line))
+
             if line.startswith("Date d'émission :"):
                 # Execute regex on processed line
                 re_groups = re.search(r"(([0-2][0-9]|(3)[0-1])(\/)(((0)[0-9])|((1)[0-2]))(\/)\d{4}$)", line).groups()
-                # Create item object
+                # Assign invoice date
                 if len(re_groups) > 1:
                     set_invoice_date(datetime.strptime(re_groups[0], '%d/%m/%Y').date())
 
             # Référence de la facture start pattern
             if line.startswith("Référence de la facture"):
                 sanitized_data.append(line)
-                
+ 
             # Rubrique start pattern
             if line.startswith("Rubrique"):
                 sanitized_data.append(line)
@@ -266,6 +312,7 @@ def extractItems(sanitized_data):
 
         if line.startswith("Référence de la facture"):
             invoice = line.replace("Référence de la facture : ", "")
+            set_invoice_reference(invoice)
 
         # Handle spaces in reference
         line = re.sub(r'(\S-)\s', r'\g<1>', line)
@@ -307,7 +354,7 @@ def extractItems(sanitized_data):
                     re_date_groups[0],
                     re_date_groups[1],
                     )
-
+                increase_invoice_parsed_amount(item.get_price())
                 items.append(item)
     return items
 
