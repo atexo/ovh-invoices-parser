@@ -76,7 +76,6 @@ def main(argv=None):
     files = [f for f in os.listdir(INPUT_FOLDER) if os.path.isfile(f'%s/%s'%(INPUT_FOLDER, f)) and f.endswith('.pdf')]
 
     for file in files:
-        print(f'Processing file %s'%(file))
         reset_invoice_reference()
 
         # Parse data from PDF file using tika
@@ -96,6 +95,8 @@ def main(argv=None):
         # Check data coherence
         if (abs(invoice_parsed_amount - invoice_total_amount) > 0.1):
             print(f'%s - Warning : missing amount : %f'%(file, invoice_total_amount-invoice_parsed_amount))
+
+        print(f'Processing file %s (period : %s)'%(file.replace(".pdf",""), invoice_date_start))
 
         # Write to CSV
         writeToCsv(invoice.get_items(), f'%s/%s'%(OUTPUT_FOLDER, file.replace(".pdf", ".csv")))
