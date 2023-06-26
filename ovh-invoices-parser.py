@@ -76,30 +76,36 @@ def main(argv=None):
     files = [f for f in os.listdir(INPUT_FOLDER) if os.path.isfile(f'%s/%s'%(INPUT_FOLDER, f)) and f.endswith('.pdf')]
 
     for file in files:
+
         reset_invoice_reference()
+        
+        try:
 
-        # Parse data from PDF file using tika
-        data = parsePdf(f'%s/%s'%(INPUT_FOLDER, file))
+            # Parse data from PDF file using tika
+            data = parsePdf(f'%s/%s'%(INPUT_FOLDER, file))
 
-        # Sanitize data 
-        sanitized_data = sanitizePDFExtraction(data.splitlines())     
+            # Sanitize data 
+            sanitized_data = sanitizePDFExtraction(data.splitlines())     
 
-        # Read items
-        items = extractItems(sanitized_data)
-        invoice = OVHInvoice(items)
+            # Read items
+            items = extractItems(sanitized_data)
+            invoice = OVHInvoice(items)
 
-        if invoice_reference not in processed_invoices:
-            all_files_data.extend(invoice.get_items())
-            processed_invoices.append(invoice_reference)
+            if invoice_reference not in processed_invoices:
+                all_files_data.extend(invoice.get_items())
+                processed_invoices.append(invoice_reference)
 
-        # Check data coherence
-        if (abs(invoice_parsed_amount - invoice_total_amount) > 0.1):
-            print(f'%s - Warning : missing amount : %f'%(file, invoice_total_amount-invoice_parsed_amount))
+            # Check data coherence
+            if (abs(invoice_parsed_amount - invoice_total_amount) > 0.1):
+                print(f'%s - Warning : missing amount : %f'%(file, invoice_total_amount-invoice_parsed_amount))
 
-        print(f'Processing file %s (period : %s)'%(file.replace(".pdf",""), invoice_date_start))
+            print(f'Processing file %s (period : %s)'%(file.replace(".pdf",""), invoice_date_start))
 
-        # Write to CSV
-        writeToCsv(invoice.get_items(), f'%s/%s'%(OUTPUT_FOLDER, file.replace(".pdf", ".csv")))
+            # Write to CSV
+            writeToCsv(invoice.get_items(), f'%s/%s'%(OUTPUT_FOLDER, file.replace(".pdf", ".csv")))
+        
+        except Exception as e:
+            print(f'%s - Warning : Could not process : %s'%(file, e))
 
     # Write to CSV
     writeToCsv(all_files_data, f'%s/%s'%(OUTPUT_FOLDER, "report.csv"))
